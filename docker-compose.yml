@@ -1,0 +1,33 @@
+services:
+  calculator:
+    build: .
+    environment:
+      SERVER_PORT: 8081
+    expose:
+      - "8081"
+    networks:
+      - calculator-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8082:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - calculator-network
+    depends_on:
+      calculator:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  calculator-network:
+    driver: bridge
