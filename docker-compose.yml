@@ -1,6 +1,6 @@
 services:
   calculator:
-    build: .
+    image: skini5001/calculator-devops:${IMAGE_TAG:-latest}
     environment:
       SERVER_PORT: 8081
     expose:
