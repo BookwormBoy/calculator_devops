@@ -84,7 +84,7 @@ pipeline {
         success {
             echo "Testing pipeline email to: YOUR_EMAIL@gmail.com"
             emailext(
-                to: 'YOUR_EMAIL@gmail.com',
+                to: 'siddharthkini24@gmail.com',
                 subject: "Jenkins Pipeline Test - Build ${env.BUILD_NUMBER}",
                 body: "This is a test email from Jenkins build ${env.BUILD_NUMBER}.\nBuild URL: ${env.BUILD_URL}",
                 mimeType: 'text/plain',
