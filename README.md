@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project implements a RESTful calculator API using Java and Spring Boot, with an end-to-end Continuous Integration and Continuous Deployment (CI/CD) pipeline using Jenkins.
+This project implements a RESTful calculator API using Java and Spring Boot, with an end-to-end CI/CD pipeline using Jenkins.
 
 The pipeline automatically builds and tests the application, builds and publishes a Docker image to Docker Hub, deploys the application using Docker Compose, verifies deployment health, and sends email notifications for successful and failed builds.
 
