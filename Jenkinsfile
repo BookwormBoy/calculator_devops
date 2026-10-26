@@ -82,11 +82,13 @@ pipeline {
 
     post {
         success {
-            echo 'CI/CD pipeline completed successfully.'
+            echo "Testing pipeline email to: YOUR_EMAIL@gmail.com"
             emailext(
-                subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Build succeeded: ${env.BUILD_URL}",
-                to: 'siddharthkini24@gmail.com'
+                to: 'YOUR_EMAIL@gmail.com',
+                subject: "Jenkins Pipeline Test - Build ${env.BUILD_NUMBER}",
+                body: "This is a test email from Jenkins build ${env.BUILD_NUMBER}.\nBuild URL: ${env.BUILD_URL}",
+                mimeType: 'text/plain',
+                attachLog: true
             )
         }
         failure {
