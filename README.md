@@ -378,7 +378,6 @@ Credentials are managed outside the source code:
 - SMTP credentials are configured in Jenkins.
 - Gmail App Passwords and other secrets must not be committed to GitHub.
 
-The `.gitignore` file should exclude generated build output, IDE-specific files, and local configuration or secret files. The `.dockerignore` file should exclude unnecessary files from the Docker build context.
 
 ## 10. Project Structure
 
