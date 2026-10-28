@@ -1,78 +1,109 @@
 # Calculator REST API — End-to-End CI/CD Pipeline
 
-## Overview
+## 1. Overview
 
-This project implements a RESTful calculator API using Java and Spring Boot, with an end-to-end CI/CD pipeline using Jenkins.
+This project implements a RESTful Calculator API using Java, Spring Boot, and Maven, supported by an automated Continuous Integration and Continuous Deployment (CI/CD) pipeline.
 
-The pipeline automatically builds and tests the application, builds and publishes a Docker image to Docker Hub, deploys the application using Docker Compose, verifies deployment health, and sends email notifications for successful and failed builds.
+The pipeline uses Jenkins to build and test the application, build and publish Docker images, deploy the application using Docker Compose, verify deployment health, and send email notifications for successful and failed builds.
 
-## Architecture
+**Key features**
+- REST API supporting addition, subtraction, multiplication, and division.
+- Input validation and structured error responses.
+- Automated unit and integration testing.
+- Multi-stage Docker image build.
+- Automated Docker Hub image publishing.
+- Multi-container deployment using Docker Compose and Nginx.
+- Health checks and restart policies.
+- GitHub webhook integration with Jenkins.
+- Email notifications for build success and failure.
+
+### Project Links
+
+- **GitHub Repository:** https://github.com/BookwormBoy/calculator_devops
+- **Docker Hub Image:** https://hub.docker.com/r/skini5001/calculator_devops
+
+## 2. Architecture
 
 ```text
-                 Developer
-                     |
-                     v
-              GitHub Repository
-                     |
-              GitHub Webhook
-                     |
-                     v
-                  Jenkins
-                     |
-              +------+------+
-              |             |
-           Maven Build   Unit Tests
-              |             |
-              +------+------+
-                     |
-                     v
-               Docker Build
-                     |
-                     v
-                Docker Hub
-                     |
-                     v
-             Docker Compose
-                     |
-             +-------+-------+
-             |               |
-        Calculator API      Nginx
-         (Port 8081)      (Port 8082)
-                             |
-                        External Clients
+                  Developer
+                      |
+                      v
+               GitHub Repository
+                      |
+                GitHub Webhook
+                      |
+                      v
+                   Jenkins
+                      |
+              +-------+-------+
+              |               |
+          Maven Build     Maven Tests
+              |               |
+              +-------+-------+
+                      |
+                      v
+                Docker Build
+                      |
+                      v
+                   Docker Hub
+                      |
+                      v
+               Docker Compose
+                      |
+              +-------+-------+
+              |               |
+         Calculator API      Nginx
+          Internal 8081     Host 8082
+                              |
+                              v
+                       External Clients
 
-         Jenkins Email Notifications
+                Jenkins Email Notifications
 ```
 
-## Technology Stack
+### Request Flow
 
-- **Language:** Java
-- **Framework:** Spring Boot
-- **Build Tool:** Apache Maven
-- **Testing:** JUnit 5, Spring Boot Test
-- **CI/CD:** Jenkins
-- **Version Control:** Git and GitHub
-- **Containerization:** Docker
-- **Container Orchestration:** Docker Compose
-- **Reverse Proxy:** Nginx
-- **Image Registry:** Docker Hub
+1. A developer pushes changes to the GitHub repository.
+2. A GitHub webhook triggers the Jenkins pipeline.
+3. Jenkins checks out the source code, builds the application, and runs automated tests.
+4. Jenkins builds a Docker image and pushes it to Docker Hub.
+5. Docker Compose deploys the calculator image alongside Nginx.
+6. Nginx forwards incoming HTTP requests to the calculator service.
+7. Jenkins verifies application health and sends an email notification with the build outcome.
 
-## REST API
+## 3. Technology Stack
 
-The application provides the following endpoints:
+| Component | Technology |
+|---|---|
+| Programming language | Java |
+| Application framework | Spring Boot |
+| Build tool | Apache Maven |
+| Unit testing | JUnit 5 |
+| Integration testing | Spring Boot Test and MockMvc |
+| Version control | Git and GitHub |
+| CI/CD | Jenkins |
+| Containerization | Docker |
+| Container orchestration | Docker Compose |
+| Reverse proxy | Nginx |
+| Image registry | Docker Hub |
+
+## 4. REST API
+
+The application exposes the following endpoints.
 
 | Operation | HTTP Method | Endpoint | Description |
 |---|---|---|---|
-| Addition | GET | `/api/v1/add` | Adds two numbers |
-| Subtraction | GET | `/api/v1/subtract` | Subtracts one number from another |
-| Multiplication | GET | `/api/v1/multiply` | Multiplies two numbers |
-| Division | GET | `/api/v1/divide` | Divides one number by another |
+| Addition | GET | `/api/v1/add?a=10&b=5` | Returns the sum |
+| Subtraction | GET | `/api/v1/subtract?a=10&b=5` | Returns the difference |
+| Multiplication | GET | `/api/v1/multiply?a=10&b=5` | Returns the product |
+| Division | GET | `/api/v1/divide?a=10&b=5` | Returns the quotient |
+| Health | GET | `/actuator/health` | Reports application health |
 
-The application listens on port `8081` inside its container. Nginx exposes the API through port `8082` on the host.
+The calculator listens on port `8081` inside the container. Nginx exposes the application through port `8082` on the host.
 
 ### Example Requests
 
-Assuming the application is running locally with the Docker Compose deployment:
+Once the Docker Compose deployment is running, use the following commands:
 
 ```bash
 curl "http://localhost:8082/api/v1/add?a=10&b=5"
@@ -81,130 +112,278 @@ curl "http://localhost:8082/api/v1/multiply?a=10&b=5"
 curl "http://localhost:8082/api/v1/divide?a=10&b=5"
 ```
 
-Replace `a` and `b` with the desired operands. These examples assume the controller uses `a` and `b` as its request parameter names.
+### Example Successful Response
 
-## Running Locally
+For addition with `a=10` and `b=5`, the expected response structure is:
 
-### Prerequisites
+```json
+{
+  "operation": "add",
+  "a": 10,
+  "b": 5,
+  "result": 15
+}
+```
 
-- Java Development Kit compatible with the project
-- Apache Maven, or the included Maven Wrapper
-- Docker Engine
-- Docker Compose
+### Input Validation and Error Handling
 
-### Build and Test
+The API validates its input parameters and returns HTTP `400 Bad Request` with a structured JSON error response for invalid requests.
 
-Clone the repository and enter the project directory:
+Error conditions include:
+
+- Missing operands.
+- Non-numeric operands.
+- Division by zero.
+
+For example, division by zero can be tested with:
+
+```bash
+curl -i "http://localhost:8082/api/v1/divide?a=10&b=0"
+```
+
+The response should have HTTP status `400` and a JSON error body describing the problem.
+
+The exact error fields and messages are determined by the application's exception handling implementation.
+
+## 5. Application Testing
+
+The application uses JUnit 5 and Spring Boot Test to verify its functionality.
+
+### Unit Tests
+
+Unit tests cover the calculator operations:
+
+- Addition.
+- Subtraction.
+- Multiplication.
+- Division.
+- Division by zero.
+
+### Integration Testing
+
+A Spring MVC integration test uses MockMvc to exercise an actual API endpoint through the Spring MVC request-handling layer.
+
+### Running Tests
+
+From the project directory, run:
+
+```bash
+mvn test
+```
+
+To compile, package, and test the application, run:
+
+```bash
+mvn clean package
+```
+
+Maven produces test reports in:
+
+```text
+target/surefire-reports/
+```
+
+The Jenkins pipeline publishes the generated JUnit XML reports so that test results are visible in the Jenkins interface.
+
+A test failure causes the Test stage to fail, preventing subsequent pipeline stages from executing successfully.
+
+## 6. Docker Containerization
+
+The application is containerized using a multi-stage Dockerfile.
+
+### Multi-Stage Build
+
+The Dockerfile separates application compilation from runtime execution:
+
+1. **Build stage:** Uses a Maven/JDK image to compile the source code and package the executable JAR.
+2. **Runtime stage:** Uses a slim JRE image and copies the packaged JAR from the build stage.
+
+This avoids including the complete Maven build environment in the final runtime image.
+
+### Docker Best Practices
+
+The containerization configuration is designed around the following practices:
+
+- Multi-stage builds to separate compilation and execution.
+- A minimal JRE runtime image.
+- Dependency-layer caching to avoid unnecessarily downloading dependencies on every build.
+- A non-root runtime user to reduce privileges.
+- An explicit exposed application port.
+- A `.dockerignore` file to exclude unnecessary files from the Docker build context.
+
+### Building and Running a Standalone Container
+
+Build a local image:
+
+```bash
+docker build -t calculator:local .
+```
+
+Run the container:
+
+```bash
+docker run --rm -p 8081:8081 calculator:local
+```
+
+The application should then be accessible at:
+
+```text
+http://localhost:8081
+```
+
+Check its health using:
+
+```bash
+curl http://localhost:8081/actuator/health
+```
+
+The standalone container can be stopped with `Ctrl+C`.
+
+## 7. Docker Compose Deployment
+
+Docker Compose orchestrates the calculator API and Nginx as separate services.
+
+### Calculator Service
+
+The calculator service:
+
+- Uses the published Docker Hub image.
+- Listens on port `8081` inside the container.
+- Exposes a health check through `/actuator/health`.
+- Uses a restart policy to recover from unexpected container termination.
+- Connects to the shared Compose network.
+
+### Nginx Service
+
+Nginx acts as a reverse proxy in front of the calculator API.
+
+- Exposes port `8082` on the host.
+- Forwards incoming requests to the calculator service on port `8081`.
+- Shares the Compose network with the calculator service.
+- Starts after the calculator service becomes healthy.
+
+### Running the Full Stack
+
+Clone the repository:
 
 ```bash
 git clone https://github.com/BookwormBoy/calculator_devops.git
-cd calculator
+cd calculator_devops
 ```
 
-Build the application and run the tests:
+Pull the published calculator image and start the services:
 
 ```bash
-./mvnw clean package
-./mvnw test
+docker compose pull
+docker compose up -d
 ```
 
-Alternatively, use `mvn` if Maven is installed.
+Docker Compose starts the calculator API and Nginx together.
 
-### Run with Docker Compose
-
-Build and start the application and Nginx:
-
-```bash
-docker compose up -d --build
-```
-
-Access the API at:
-
-```text
-http://localhost:8082
-```
-
-Check the container status:
+Check the running services:
 
 ```bash
 docker compose ps
 ```
 
-Stop the services:
+Check the application health:
+
+```bash
+curl http://localhost:8082/actuator/health
+```
+
+Stop the deployment:
 
 ```bash
 docker compose down
 ```
 
-## CI/CD Pipeline
+### Repeatable Deployment
 
-The pipeline is defined in the `Jenkinsfile` and consists of the following stages.
+The Jenkins pipeline deploys the image associated with the current build number.
 
-### 1. Checkout
+It pulls the published image and uses Docker Compose to update the running services. The health-verification stage checks whether the application is reachable before declaring the pipeline successful.
 
-Retrieves the source code from the configured GitHub branch.
+Docker Compose manages the service containers and network, allowing the deployment to be repeated without manually creating containers or networks.
 
-### 2. Build
+## 8. Jenkins CI/CD Pipeline
 
-Uses Maven to compile and package the Spring Boot application.
+The pipeline is defined declaratively in the `Jenkinsfile` stored in the GitHub repository.
 
-### 3. Test
+### Pipeline Stages
 
-Executes automated tests using Maven and publishes the JUnit test results in Jenkins.
+| Stage | Purpose |
+|---|---|
+| Checkout | Retrieves the latest source code from GitHub. |
+| Build | Runs `mvn clean package -DskipTests` to compile and package the application. |
+| Test | Runs `mvn test` and publishes JUnit XML reports. |
+| Docker Build | Builds the application image and tags it with the Jenkins build number and `latest`. |
+| Push | Authenticates with Docker Hub using Jenkins-managed credentials and pushes both image tags. |
+| Deploy | Pulls the image corresponding to the current build number and deploys the services using Docker Compose. |
+| Verify Health | Checks the application health endpoint and retries before marking deployment verification as failed. |
 
-### 4. Docker Build
+### Automatic Triggering
 
-Builds a Docker image containing the application and tags it with the Jenkins build number and `latest`.
+A GitHub webhook triggers Jenkins when changes are pushed to the configured branch.
 
-### 5. Push
+This enables the CI/CD workflow to execute automatically without requiring the developer to start every build manually.
 
-Authenticates with Docker Hub using Jenkins-managed credentials and publishes both image tags.
+### Docker Image Versioning
 
-### 6. Deploy
+Images are tagged using the Jenkins build number and the `latest` tag.
 
-Pulls the image corresponding to the current Jenkins build number and deploys it using Docker Compose.
+For example:
 
-Docker Compose runs the calculator application and Nginx reverse proxy.
+```text
+skini5001/calculator_devops:<BUILD_NUMBER>
+skini5001/calculator_devops:latest
+```
 
-### 7. Verify Health
+The numbered tag identifies a particular pipeline build, while `latest` points to the most recently published image.
 
-Checks the application's Spring Boot Actuator health endpoint through Nginx:
+The deployment stage uses the numbered tag to deploy the image produced by that pipeline run.
+
+### Deployment Health Verification
+
+The pipeline checks:
 
 ```text
 http://localhost:8082/actuator/health
 ```
 
-The pipeline retries the check before marking the deployment as failed.
+The health-verification stage retries the request if the application is not immediately available. If health verification fails after the retries, the pipeline fails rather than reporting a successful deployment.
 
-### Notifications
+### Email Notifications
 
-The pipeline sends email notifications when a build succeeds or fails. Email delivery is configured through Jenkins' Extended E-mail Notification settings.
+The Jenkins pipeline sends email notifications for both successful and failed builds.
 
-## Automation
+Email delivery is configured using the Jenkins Extended E-mail Notification settings. SMTP credentials are configured in Jenkins rather than committed to the repository.
 
-A GitHub webhook triggers Jenkins when changes are pushed to the configured branch. This removes the need to start each pipeline run manually.
+## 9. Version Control and Security
 
-The pipeline automates:
+The project uses Git and GitHub for source control and CI/CD integration.
 
-- Source checkout
-- Application build and testing
-- Docker image creation and publishing
-- Deployment
-- Health verification
-- Success and failure notifications
+The development workflow includes:
 
-## Configuration and Security
+- A dedicated feature branch for the CI/CD implementation.
+- A pull request or equivalent merge process into `main`.
+- Progressive commits documenting the implementation.
+- A public GitHub repository containing the application and pipeline configuration.
 
-Credentials are managed through Jenkins rather than being stored in the source repository.
+### Credential Management
+
+Credentials are managed outside the source code:
 
 - Docker Hub credentials are stored in Jenkins Credentials.
-- SMTP credentials are configured in Jenkins for email notifications.
-- No passwords, access tokens, or Gmail App Passwords should be committed to GitHub.
+- SMTP credentials are configured in Jenkins.
+- Gmail App Passwords and other secrets must not be committed to GitHub.
 
-## Project Structure
+The `.gitignore` file should exclude generated build output, IDE-specific files, and local configuration or secret files. The `.dockerignore` file should exclude unnecessary files from the Docker build context.
+
+## 10. Project Structure
 
 ```text
-calculator/
+calculator_devops/
 ├── src/
 │   ├── main/
 │   │   └── java/
@@ -213,12 +392,18 @@ calculator/
 ├── nginx/
 │   └── default.conf
 ├── Dockerfile
+├── .dockerignore
+├── .gitignore
 ├── docker-compose.yml
 ├── Jenkinsfile
 ├── pom.xml
 └── README.md
 ```
 
-## Conclusion
+## 11. Conclusion
 
-This project demonstrates an automated software delivery workflow for a REST API. By integrating GitHub, Jenkins, Maven, Docker, Docker Hub, Docker Compose, and Nginx, it automates testing, image publishing, deployment, and health verification while providing email notifications for pipeline outcomes.
+This project demonstrates an end-to-end CI/CD workflow for a Spring Boot REST API.
+
+By integrating GitHub, Jenkins, Maven, Docker, Docker Hub, Docker Compose, and Nginx, it automates application building, testing, container image publishing, deployment, health verification, and email notifications.
+
+The resulting workflow demonstrates automated software delivery, container orchestration, application health monitoring, and repeatable deployment using the tools covered in the Software Production Engineering course.
